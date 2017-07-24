@@ -6,6 +6,10 @@
   "scripts": {
     "test": "test"
   },
+  "dependencies": {
+    "ftp-srv": "^2.10.1",
+    "azure-storage": "^2.2.1"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/xiaoningliu/azure-storage-ftp.git"
