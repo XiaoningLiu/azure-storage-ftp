@@ -1,0 +1,26 @@
+{
+  "name": "azure-storage-ftp",
+  "version": "0.1.0",
+  "description": "Node.js module for creating a FTP service with Azure Storage",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xiaoningliu/azure-storage-ftp.git"
+  },
+  "keywords": [
+    "Azure",
+    "Storage",
+    "FTP",
+    "Download",
+    "Upload"
+  ],
+  "author": "XiaoningLiu, JiawenWu, YunjiaGe",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/xiaoningliu/azure-storage-ftp/issues"
+  },
+  "homepage": "https://github.com/xiaoningliu/azure-storage-ftp#readme"
+}
