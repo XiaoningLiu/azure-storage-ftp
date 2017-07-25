@@ -45,23 +45,26 @@ class AzureStorageFileSystem extends FileSystem {
 
     get(fileName) {
         const { serverPath } = this._resolvePath(fileName);
-        if ((serverPath.split('\\').length - 1) === 1) {
+        var self = this;
+        if (serverPath === '\\') {
             // If this is root
             console.log('Root');
             return {
                 name: '\\',
                 isDirectory: function () { return true }
             };
-        } else if ((serverPath.split('\\').length - 1) === 2) {
+        } else if ((serverPath.split('\\').length - 1) === 1) {
             // If this is container
+            //currentContainerName = serverPath.split('\\')[1];
             return thenify(function (callback) {
-                self.blobService.getContainerProperties(self.container, function (err, res) {
+                self.blobService.getContainerProperties(serverPath.split('\\')[1], function (err, res) {
+                    //console.log(self.container.name);
                     callback(err, res);
                 });
             })().then(function (values) {
                 // TODO: transform storage returned values into fs.stat like objects (in above method comments)
                 return {
-                    name: 'xxx', // container/blob
+                    name: serverPath.split('\\')[1], // container/blob
                     isDirectory: function () { return true }, // Return true when it's a container
                     dev: 920907695,
                     mode: 16822,
@@ -84,16 +87,18 @@ class AzureStorageFileSystem extends FileSystem {
 
                 };
             });
-        } else if ((serverPath.split('\\').length - 1) === 3) {
-            // If this is bllob
+        } else if ((serverPath.split('\\').length - 1) === 2) {
+            // If this is blob
+            //currentContainerName = serverPath.split('\\')[1];
+            //currentBlobName = serverPath.split('\\')[2];
             return thenify(function (callback) {
-                self.blobService.getBlobProperties(self.container, function (err, res) {
+                self.blobService.getBlobProperties(serverPath.split('\\')[1], serverPath.split('\\')[2], function (err, res) {
                     callback(err, res);
                 });
             })().then(function (values) {
                 // TODO: transform storage returned values into fs.stat like objects (in above method comments)
                 return {
-                    name: 'xxx', // container/blob name
+                    name: serverPath.split('\\')[2], // container/blob name
                     isDirectory: function () { return false }, // Return false when it's a blob
                     dev: 920907695,
                     mode: 16822,
