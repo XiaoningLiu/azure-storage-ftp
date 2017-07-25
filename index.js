@@ -54,7 +54,7 @@ class AzureStorageFileSystem extends FileSystem {
         var self = this;
         if (serverPath === '\\') {
             // If this is root
-            console.log('Root');
+            // console.log('Root');
             return {
                 name: '\\',
                 isDirectory: function () { return true }
@@ -188,7 +188,7 @@ class AzureStorageFileSystem extends FileSystem {
                 };
             });
         }).then(function (values) {
-            console.log(values);
+            // console.log(values);
             // TODO: transform storage returned values into fs.stat like objects (in above method comments)
             return values;
         }).catch(function (err) {
@@ -199,21 +199,19 @@ class AzureStorageFileSystem extends FileSystem {
 
     chdir(path = '.') {
         var self = this;
-        const { serverPath } = this._resolvePath(path);
+        const { serverPath } = self._resolvePath(path);
         if (serverPath === '\\') {
             self.currentContainer = '';
             self.cwd = serverPath;
             return self.cwd;
         }
-        self.currentContainer = serverPath.split('\\')[1];
 
+        self.currentContainer = serverPath.split('\\')[1];
         return thenify(function (callback) {
-            // If this is container
             self.blobService.doesContainerExist(self.currentContainer, function (err, res) {
                 callback(err, res);
             });
         })().then(function (values) {
-            // TODO: transform storage returned values into fs.stat like objects (in above method comments)
             if (values.exists) {
                 self.cwd = serverPath;
                 return self.cwd;
@@ -223,35 +221,27 @@ class AzureStorageFileSystem extends FileSystem {
 
     delete(path) {
         var self = this;
-        const { serverPath } = this._resolvePath(path);
+        const { serverPath } = self._resolvePath(path);
         if (serverPath === '\\') {
-            self.currentContainer = '';
             return;
         }
+
         var len = serverPath.split('\\').length - 1;
         if (len == 1) {
-            self.currentContainer = serverPath.split('\\')[1];
-
             return thenify(function (callback) {
-                // If this is container
-                self.blobService.deleteContainerIfExists(self.currentContainer, function (err, res) {
+                self.blobService.deleteContainerIfExists(path, function (err, res) {
                     callback(err, res);
                 });
             })().then(function (values) {
-                // TODO: transform storage returned values into fs.stat like objects (in above method comments)
-                console.log(values);
+                return values;
             });
         } else if (len == 2) {
-            self.currentContainer = serverPath.split('\\')[1];
-            var currentBlob = serverPath.split('\\')[2]
             return thenify(function (callback) {
-                // If this is container
-                self.blobService.deleteBlobIfExists(self.currentContainer, currentBlob, function (err, res) {
+                self.blobService.deleteBlobIfExists(self.currentContainer, path, function (err, res) {
                     callback(err, res);
                 });
             })().then(function (values) {
-                // TODO: transform storage returned values into fs.stat like objects (in above method comments)
-                console.log(values);
+                return values;
             });
         } else {
             return;
