@@ -273,15 +273,13 @@ class AzureStorageFileSystem extends FileSystem {
     }
 }
 
-
 const log = bunyan.createLogger({ name: 'test' });
 log.level('debug');
 
-const server = new FtpServer('ftp://127.0.0.1:8881', {
+const server = new FtpServer('ftp://127.0.0.1:21', {
     log,
     pasv_range: 8882,
-    greeting: ['Welcome', 'to', 'the', 'jungle!'],
-    file_format: 'ep',
+    greeting: ['Welcome', 'to', 'the', 'Windows', 'Azure', 'Storage', 'FTP'],
     anonymous: 'sillyrabbit'
 });
 server.on('login', ({ username, password }, resolve, reject) => {
