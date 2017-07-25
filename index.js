@@ -11,6 +11,7 @@ const FtpServer = require('ftp-srv');
 const FileSystem = FtpServer.FileSystem;
 const thenify = require('thenify');
 
+
 class AzureStorageFileSystem extends FileSystem {
     constructor(connection, { root, cwd, storageAccount, storageSASToken } = {}) {
         super(connection, { root, cwd });
@@ -19,8 +20,10 @@ class AzureStorageFileSystem extends FileSystem {
         this.storageAccount = storageAccount || '';
         this.storageBlobURI = `https://${storageAccount}.blob.core.windows.net`;
         this.storageSASToken = storageSASToken || '';
-        this.blobService = AzureStorage.createBlobServiceWithSas(storageBlobURI, storageSASToken);
+        this.blobService = AzureStorage.createBlobServiceWithSas(this.storageBlobURI, this.storageSASToken);
         this.currentContainer = ''; // Current Container
+
+        
     }
 
     /*
@@ -44,9 +47,19 @@ class AzureStorageFileSystem extends FileSystem {
         }
     */
     get(fileName) {
+        console.log(fileName);
+        const {serverPath} = this._resolvePath(fileName);
+        console.log(serverPath);
+
+        if (serverPath=='\\'){
+            serverPath='\\test\\1';
+            console.log(serverPath.includes('\\'));
+        }
+
+        var self = this;
         return thenify(function (callback) {
             // If this is container
-            this.blobService.getContainerProperties(this.container, function (err, res) {
+            self.blobService.getContainerProperties("test", function (err, res) {
                 callback(err, res);
             });
         })().then(function (values) {
@@ -76,6 +89,30 @@ class AzureStorageFileSystem extends FileSystem {
             };
         });
     };
+
+    mkdir(path) {
+
+        const {serverPath} = this._resolvePath(path);
+
+        var self = this;
+
+        function fn(serverPath,level,cb){
+
+            self.blobService.createContainer(serverPath,level, function (error){
+
+              cb(error.message);
+            }); 
+
+        }
+
+        const p=thenify(fn);
+        p('aapath',{publicAccessLevel : 'blob'})
+        .then(val =>{ return serverPath;})
+        .catch(err => {console.log(err);return err;});
+
+
+    }
+
 
     /*
     * return {
