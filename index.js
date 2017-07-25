@@ -20,6 +20,7 @@ class AzureStorageFileSystem extends FileSystem {
         this.storageSASToken = storageSASToken || '';
         this.blobService = AzureStorage.createBlobServiceWithSas(this.storageBlobURI, this.storageSASToken);
         this.currentContainer = ''; // Current Container
+        
     }
 
     /*
@@ -132,7 +133,8 @@ class AzureStorageFileSystem extends FileSystem {
         const { serverPath } = this._resolvePath(path);
         if (serverPath === '\\') {
             self.currentContainer = '';
-            return;
+              self.cwd = serverPath;
+                return self.cwd;
         }
         self.currentContainer = serverPath.split('\\')[1];
 
@@ -149,6 +151,44 @@ class AzureStorageFileSystem extends FileSystem {
             }
         });
     }
+
+     delete(path) {
+        var self = this;
+        const { serverPath } = this._resolvePath(path);
+        if (serverPath === '\\') {
+            self.currentContainer = '';
+            return;
+        }
+        var len=serverPath.split('\\').length-1;
+        if(len==1){
+        self.currentContainer = serverPath.split('\\')[1];
+
+        return thenify(function (callback) {
+            // If this is container
+            self.blobService.deleteContainerIfExists(self.currentContainer, function (err, res) {
+                callback(err, res);
+            });
+        })().then(function (values) {
+            // TODO: transform storage returned values into fs.stat like objects (in above method comments)
+           console.log(values);
+        });
+        }else if(len==2){
+              self.currentContainer = serverPath.split('\\')[1];
+              var currentBlob=serverPath.split('\\')[2]
+              return thenify(function (callback) {
+            // If this is container
+            self.blobService.deleteBlobIfExists(self.currentContainer, currentBlob,function (err, res) {
+                callback(err, res);
+            });
+        })().then(function (values) {
+            // TODO: transform storage returned values into fs.stat like objects (in above method comments)
+           console.log(values);
+        });
+        }else{
+            return;
+        }
+    }
+
 }
 
 
