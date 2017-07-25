@@ -27,41 +27,105 @@ class AzureStorageFileSystem extends FileSystem {
     * return {
         name: 'xxx', // container/blob name
         isDirectory: function () { return true }, // Return true when it's a container
-        dev: 920907695,
-        mode: 16822,
-        nlink: 1,
-        uid: 0,
-        gid: 0,
-        rdev: 0,
-        blksize: undefined,
-        ino: 281474976890711,
-        size: 0,
-        blocks: undefined,
-        atime: new Date('2017-04-06T13:02:44.397Z'),
-        mtime: new Date('2017-04-06T13:02:44.397Z'),
-        ctime: new Date('2017-07-21T06:13:17.006Z'),
-        birthtime: new Date('2017-04-06T13:02:44.396Z')
+        // dev: 920907695,
+        // mode: 16822,
+        // nlink: 1,
+        // uid: 0,
+        // gid: 0,
+        // rdev: 0,
+        // blksize: undefined,
+        // ino: 281474976890711,
+        // size: 0,
+        // blocks: undefined,
+        // atime: new Date('2017-04-06T13:02:44.397Z'),
+        // mtime: new Date('2017-04-06T13:02:44.397Z'),
+        // ctime: new Date('2017-07-21T06:13:17.006Z'),
+        // birthtime: new Date('2017-04-06T13:02:44.396Z')
         }
     */
+
     get(fileName) {
-        return {
-            name: 'xxx', // container/blob name
-            isDirectory: function () { return true }, // Return true when it's a container
-            dev: 920907695,
-            mode: 16822,
-            nlink: 1,
-            uid: 0,
-            gid: 0,
-            rdev: 0,
-            blksize: undefined,
-            ino: 281474976890711,
-            size: 0,
-            blocks: undefined,
-            atime: new Date('2017-04-06T13:02:44.397Z'),
-            mtime: new Date('2017-04-06T13:02:44.397Z'),
-            ctime: new Date('2017-07-21T06:13:17.006Z'),
-            birthtime: new Date('2017-04-06T13:02:44.396Z')
-        };
+        const { serverPath } = this._resolvePath(fileName);
+        var self = this;
+        if (serverPath === '\\') {
+            // If this is root
+            console.log('Root');
+            return {
+                name: '\\',
+                isDirectory: function () { return true }
+            };
+        } else if ((serverPath.split('\\').length - 1) === 1) {
+            // If this is container
+            //currentContainerName = serverPath.split('\\')[1];
+            return thenify(function (callback) {
+                self.blobService.getContainerProperties(serverPath.split('\\')[1], function (err, res) {
+                    //console.log(self.container.name);
+                    callback(err, res);
+                });
+            })().then(function (values) {
+                // TODO: transform storage returned values into fs.stat like objects (in above method comments)
+                return {
+                    name: serverPath.split('\\')[1], // container/blob
+                    isDirectory: function () { return true }, // Return true when it's a container
+                    dev: 920907695,
+                    mode: 16822,
+                    nlink: 1,
+                    uid: 0,
+                    gid: 0,
+                    rdev: 0,
+                    blksize: undefined,
+                    ino: 281474976890711,
+                    size: 0,
+                    blocks: undefined,
+                    atime: new Date('2017-04-06T13:02:44.397Z'),
+                    mtime: new Date('2017-04-06T13:02:44.397Z'),
+                    ctime: new Date('2017-07-21T06:13:17.006Z'),
+                    birthtime: new Date('2017-04-06T13:02:44.396Z')
+                };
+            }).catch(function (err) {
+                // TODO: deal with err
+                return {
+
+                };
+            });
+        } else if ((serverPath.split('\\').length - 1) === 2) {
+            // If this is blob
+            //currentContainerName = serverPath.split('\\')[1];
+            //currentBlobName = serverPath.split('\\')[2];
+            return thenify(function (callback) {
+                self.blobService.getBlobProperties(serverPath.split('\\')[1], serverPath.split('\\')[2], function (err, res) {
+                    callback(err, res);
+                });
+            })().then(function (values) {
+                // TODO: transform storage returned values into fs.stat like objects (in above method comments)
+                return {
+                    name: serverPath.split('\\')[2], // container/blob name
+                    isDirectory: function () { return false }, // Return false when it's a blob
+                    dev: 920907695,
+                    mode: 16822,
+                    nlink: 1,
+                    uid: 0,
+                    gid: 0,
+                    rdev: 0,
+                    blksize: undefined,
+                    ino: 281474976890711,
+                    size: 0,
+                    blocks: undefined,
+                    atime: new Date('2017-04-06T13:02:44.397Z'),
+                    mtime: new Date('2017-04-06T13:02:44.397Z'),
+                    ctime: new Date('2017-07-21T06:13:17.006Z'),
+                    birthtime: new Date('2017-04-06T13:02:44.396Z')
+                };
+            }).catch(function (err) {
+                // TODO: deal with err
+                return {
+
+                };
+            });
+        } else {
+            console.log('Blob with Folder Error!');
+            return null;
+        }
     };
 
     /*
