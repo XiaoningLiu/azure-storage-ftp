@@ -101,10 +101,14 @@ class AzureStorageFileSystem extends FileSystem {
     }
 
     chdir(path = '.') {
-          self=this
+          var self=this
+          var len=serverPath.split('\\').length-1;
+          if (len==0) self.currentContainer='';
+          if (len==1) self.currentContainer=serverPath.split('\\')[1];
+         
          return thenify(function (callback) {
             // If this is container
-            self.blobService.doesContainerExist(self.container, function (err, res) {
+            self.blobService.doesContainerExist(self.currentContainer, function (err, res) {
                 callback(err, res);
             });
         })().then(function (values) {
@@ -115,6 +119,7 @@ class AzureStorageFileSystem extends FileSystem {
            }
         });
     }
+    
 }
 
 const log = bunyan.createLogger({ name: 'test' });
