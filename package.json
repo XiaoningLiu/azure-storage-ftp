@@ -6,6 +6,17 @@
   "scripts": {
     "test": "test"
   },
+  "dependencies": {
+    "ftp-srv": "^2.10.1",
+    "azure-storage": "^2.2.1",
+    "bluebird": "^3.5.0",
+    "bunyan": "^1.8.10",
+    "lodash": "^4.17.4",
+    "moment": "^2.18.1",
+    "uuid": "^3.1.0",
+    "when": "^3.7.8",
+    "thenify": "^3.3.0"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/xiaoningliu/azure-storage-ftp.git"
