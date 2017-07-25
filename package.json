@@ -8,7 +8,9 @@
   },
   "dependencies": {
     "ftp-srv": "^2.10.1",
-    "azure-storage": "^2.2.1"
+    "azure-storage": "^2.2.1",
+    "bluebird": "^3.5.0",
+    "bunyan": "^1.8.10"
   },
   "repository": {
     "type": "git",
