@@ -19,7 +19,7 @@ class AzureStorageFileSystem extends FileSystem {
         this.storageAccount = storageAccount || '';
         this.storageBlobURI = `https://${storageAccount}.blob.core.windows.net`;
         this.storageSASToken = storageSASToken || '';
-        this.blobService = AzureStorage.createBlobServiceWithSas(storageBlobURI, storageSASToken);
+        this.blobService = AzureStorage.createBlobServiceWithSas(this.storageBlobURI, this.storageSASToken);
         this.currentContainer = ''; // Current Container
     }
 
@@ -101,6 +101,19 @@ class AzureStorageFileSystem extends FileSystem {
     }
 
     chdir(path = '.') {
+          self=this
+         return thenify(function (callback) {
+            // If this is container
+            self.blobService.doesContainerExist(self.container, function (err, res) {
+                callback(err, res);
+            });
+        })().then(function (values) {
+            // TODO: transform storage returned values into fs.stat like objects (in above method comments)
+           if(values){
+               this.cwd=serverPath;
+               return this.cwd;
+           }
+        });
     }
 }
 
