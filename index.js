@@ -43,6 +43,11 @@ class AzureStorageFileSystem extends FileSystem {
         }
     */
 
+    _getBlobName(serverPath) {
+        var splittedPath = serverPath.split('\\');
+        return splittedPath.length === 3 ? splittedPath[3] : '';
+    }
+
     get(fileName) {
         const { serverPath } = this._resolvePath(fileName);
         if ((serverPath.split('\\').length - 1) === 1) {
@@ -208,8 +213,31 @@ class AzureStorageFileSystem extends FileSystem {
             }
         });
     }
-}
 
+    read(fileName, { start = undefined } = {}) {
+        var self = this;
+        return thenify(function (callback) {
+            var stream = self.blobService.createReadStream(self.currentContainer, fileName, function (err, res) {
+
+            });
+            callback(null, stream);
+        })().then(function (stream) {
+            return stream;
+        });
+    }
+
+    write(fileName, { append = false, start = undefined } = {}) {
+        var self = this;
+        return thenify(function (callback) {
+            var stream = self.blobService.createWriteStreamToBlockBlob(self.currentContainer, fileName, function (err, res) {
+
+            });
+            callback(null, stream);
+        })().then(function (stream) {
+            return stream;
+        });
+    }
+}
 
 
 const log = bunyan.createLogger({ name: 'test' });
