@@ -42,39 +42,26 @@ class AzureStorageFileSystem extends FileSystem {
         birthtime: new Date('2017-04-06T13:02:44.396Z')
         }
     */
-    // get(fileName) {
-    //     return thenify(function (callback) {
-    //         // If this is container
-    //         this.blobService.getContainerProperties(this.container, function (err, res) {
-    //             callback(err, res);
-    //         });
-    //     })().then(function (values) {
-    //         // TODO: transform storage returned values into fs.stat like objects (in above method comments)
-    //         return {
-    //             name: 'xxx', // container/blob name
-    //             isDirectory: function () { return true }, // Return true when it's a container
-    //             dev: 920907695,
-    //             mode: 16822,
-    //             nlink: 1,
-    //             uid: 0,
-    //             gid: 0,
-    //             rdev: 0,
-    //             blksize: undefined,
-    //             ino: 281474976890711,
-    //             size: 0,
-    //             blocks: undefined,
-    //             atime: new Date('2017-04-06T13:02:44.397Z'),
-    //             mtime: new Date('2017-04-06T13:02:44.397Z'),
-    //             ctime: new Date('2017-07-21T06:13:17.006Z'),
-    //             birthtime: new Date('2017-04-06T13:02:44.396Z')
-    //         };
-    //     }).catch(function (err) {
-    //         // TODO: deal with err
-    //         return {
-
-    //         };
-    //     });
-    // };
+    get(fileName) {
+        return {
+            name: 'xxx', // container/blob name
+            isDirectory: function () { return true }, // Return true when it's a container
+            dev: 920907695,
+            mode: 16822,
+            nlink: 1,
+            uid: 0,
+            gid: 0,
+            rdev: 0,
+            blksize: undefined,
+            ino: 281474976890711,
+            size: 0,
+            blocks: undefined,
+            atime: new Date('2017-04-06T13:02:44.397Z'),
+            mtime: new Date('2017-04-06T13:02:44.397Z'),
+            ctime: new Date('2017-07-21T06:13:17.006Z'),
+            birthtime: new Date('2017-04-06T13:02:44.396Z')
+        };
+    };
 
     /*
     * return {
@@ -136,12 +123,35 @@ class AzureStorageFileSystem extends FileSystem {
             return values;
         }).catch(function (err) {
             // TODO: deal with err
-            return [{
+            return [{}];
+        });
+    }
 
-            }];
+    chdir(path = '.') {
+        var self = this;
+        const { serverPath } = this._resolvePath(path);
+        if (serverPath === '\\') {
+            self.currentContainer = '';
+            return;
+        }
+        self.currentContainer = serverPath.split('\\')[1];
+
+        return thenify(function (callback) {
+            // If this is container
+            self.blobService.doesContainerExist(self.currentContainer, function (err, res) {
+                callback(err, res);
+            });
+        })().then(function (values) {
+            // TODO: transform storage returned values into fs.stat like objects (in above method comments)
+            if (values.exists) {
+                self.cwd = serverPath;
+                return self.cwd;
+            }
         });
     }
 }
+
+
 
 const log = bunyan.createLogger({ name: 'test' });
 log.level('debug');
