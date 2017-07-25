@@ -1,5 +1,5 @@
 // const FtpSvr = require('ftp-srv');
-// const AzureStorage = require('azure-storage');
+const AzureStorage = require('azure-storage');
 // const Path = require('path');
 // const Promise = require('bluebird');
 // const Fs = Promise.promisifyAll(require('fs'), {suffix: 'Promised'});
@@ -99,38 +99,91 @@ const FtpServer = require('ftp-srv');
 const FileSystem = FtpServer.FileSystem;
 
 class AzureStorageFileSystem extends FileSystem {
-    constructor() {
-        super(...arguments);
-        this.storageAccount = '';
-        this.storageBlobURI = '';
-        this.storageSASToken = '';
-    }
+  constructor(connection, { root, cwd, storageAccount, storageSASToken } = {}) {
+    super(connection, { root, cwd });
+    this.storageAccount = storageAccount || '';
+    this.storageBlobURI = `https://${storageAccount}.blob.core.windows.net`;
+    this.storageSASToken = storageSASToken || '';
+    this.blobService = 
+  }
 
   get(fileName) {
-    // console.log(fileName);
-    const {fsPath} = this._resolvePath(fileName);
-    return fs.stat(fsPath)
-    .then((stat) => {
-      // console.log(fsPath, stat);
-      return _.set(stat, 'name', fileName);
+    return {
+      isDirectory: function () { return true },
+      dev: 920907695,
+      mode: 16822,
+      nlink: 1,
+      uid: 0,
+      gid: 0,
+      rdev: 0,
+      blksize: undefined,
+      ino: 281474976890711,
+      size: 0,
+      blocks: undefined,
+      atime: new Date('2017-04-06T13:02:44.397Z'),
+      mtime: new Date('2017-04-06T13:02:44.397Z'),
+      ctime: new Date('2017-07-21T06:13:17.006Z'),
+      birthtime: new Date('2017-04-06T13:02:44.396Z')
+    }
+  };
+
+  list(path = '.') {
+    const { fsPath } = this._resolvePath(path);
+
+    return new Promise(function (resolve, reject) {
+      resolve([{
+        name: 'helle',
+        isDirectory: function () { return true },
+        dev: 920907695,
+        mode: 16822,
+        nlink: 1,
+        uid: 0,
+        gid: 0,
+        rdev: 0,
+        blksize: undefined,
+        ino: 281474976890711,
+        size: 0,
+        blocks: undefined,
+        atime: new Date('2017-04-06T13:02:44.397Z'),
+        mtime: new Date('2017-04-06T13:02:44.397Z'),
+        ctime: new Date('2017-07-21T06:13:17.006Z'),
+        birthtime: new Date('2017-04-06T13:02:44.396Z')
+      }, {
+        name: 'world',
+        isDirectory: function () { return true },
+        dev: 920907695,
+        mode: 16822,
+        nlink: 1,
+        uid: 0,
+        gid: 0,
+        rdev: 0,
+        blksize: undefined,
+        ino: 281474976890711,
+        size: 0,
+        blocks: undefined,
+        atime: new Date('2017-04-06T13:02:44.397Z'),
+        mtime: new Date('2017-04-06T13:02:44.397Z'),
+        ctime: new Date('2017-07-21T06:13:17.006Z'),
+        birthtime: new Date('2017-04-06T13:02:44.396Z')
+      }]);
     });
   }
 
   chdir(path = '.') {
     console.log('chdir()', path);
-    const {fsPath, serverPath} = this._resolvePath(path);
+    const { fsPath, serverPath } = this._resolvePath(path);
     return fs.stat(fsPath)
-    .tap(stat => {
-      if (!stat.isDirectory()) throw new errors.FileSystemError('Not a valid directory');
-    })
-    .then(() => {
-      this.cwd = serverPath;
-      // console.log(this.currentDirectory());
-      return this.currentDirectory();
-    });
+      .tap(stat => {
+        if (!stat.isDirectory()) throw new errors.FileSystemError('Not a valid directory');
+      })
+      .then(() => {
+        this.cwd = serverPath;
+        // console.log(this.currentDirectory());
+        return this.currentDirectory();
+      });
   }
 
-  
+
 
   // list(filepath) {
   //     console.log('READDIR....................');
@@ -138,7 +191,7 @@ class AzureStorageFileSystem extends FileSystem {
   // }
 }
 
-const log = bunyan.createLogger({name: 'test'});
+const log = bunyan.createLogger({ name: 'test' });
 log.level('trace');
 log.level('debug');
 
@@ -149,13 +202,15 @@ const server = new FtpServer('ftp://127.0.0.1:8881', {
   file_format: 'ep',
   anonymous: 'sillyrabbit'
 });
-server.on('login', ({username, password}, resolve, reject) => {
+server.on('login', ({ username, password }, resolve, reject) => {
   if (username === 'test' && password === 'test' || username === 'anonymous') {
     var root = require('os').homedir();
     var cwd = '';
+    var storageAccount = 'browserifytest';
+    var storageSASToken = '?sv=2015-12-11&ss=bfqt&srt=sco&sp=rwdlacup&se=2017-12-27T22:19:10Z&st=2016-12-27T14:19:10Z&spr=https&sig=IHhkdpaB9PkccStZvSSqMxFSA16SMSQwIDFB97XStOY%3D';
     resolve({
-         root: require('os').homedir(),
-         fs: new AzureStorageFileSystem(null, {root, cwd})
+      root: require('os').homedir(),
+      fs: new AzureStorageFileSystem(null, { root, cwd, storageAccount, storageSASToken })
     });
   } else reject('Bad username or password');
 });
