@@ -7,6 +7,13 @@
 // //const FileSystem = require('C:\Github\XiaoningLiu\azure-storage-ftp\node_modules\ftp-srv\src\fs.js');
 // const {FileSystem} = require('ftp-srv');
 
+const _ = require('lodash');
+const nodePath = require('path');
+const uuid = require('uuid');
+const when = require('when');
+const whenNode = require('when/node');
+const syncFs = require('fs');
+const fs = whenNode.liftAll(syncFs);
 
 /* Following are samples only */
 // For Azure Storage
@@ -90,7 +97,6 @@
 const bunyan = require('bunyan');
 const FtpServer = require('ftp-srv');
 const FileSystem = FtpServer.FileSystem;
-const fs = require('fs');
 
 class AzureStorageFileSystem extends FileSystem {
     constructor() {
@@ -100,19 +106,41 @@ class AzureStorageFileSystem extends FileSystem {
         this.storageSASToken = '';
     }
 
-    // get(fileName) {
-    //     console.log('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~');
-    //     return fs.stat('C:\\Users\\xiaonli\\Downloads\\ChromeSetup.exe');
-    // }
+  get(fileName) {
+    // console.log(fileName);
+    const {fsPath} = this._resolvePath(fileName);
+    return fs.stat(fsPath)
+    .then((stat) => {
+      // console.log(fsPath, stat);
+      return _.set(stat, 'name', fileName);
+    });
+  }
 
-    // list(filepath) {
-    //     console.log('READDIR....................');
-    //     return fs.readdirSync('.');
-    // }
+  chdir(path = '.') {
+    console.log('chdir()', path);
+    const {fsPath, serverPath} = this._resolvePath(path);
+    return fs.stat(fsPath)
+    .tap(stat => {
+      if (!stat.isDirectory()) throw new errors.FileSystemError('Not a valid directory');
+    })
+    .then(() => {
+      this.cwd = serverPath;
+      // console.log(this.currentDirectory());
+      return this.currentDirectory();
+    });
+  }
+
+  
+
+  // list(filepath) {
+  //     console.log('READDIR....................');
+  //     return fs.readdirSync('.');
+  // }
 }
 
 const log = bunyan.createLogger({name: 'test'});
 log.level('trace');
+log.level('debug');
 
 const server = new FtpServer('ftp://127.0.0.1:8881', {
   log,
