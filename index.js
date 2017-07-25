@@ -48,7 +48,10 @@ class AzureStorageFileSystem extends FileSystem {
         if ((serverPath.split('\\').length - 1) === 1) {
             // If this is root
             console.log('Root');
-            return null;
+            return {
+                name: '\\',
+                isDirectory: function () { return true }
+            };
         } else if ((serverPath.split('\\').length - 1) === 2) {
             // If this is container
             return thenify(function (callback) {
