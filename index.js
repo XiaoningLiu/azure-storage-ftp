@@ -194,7 +194,7 @@ class AzureStorageFileSystem extends FileSystem {
 
     chdir(path = '.') {
         var self = this;
-        const { serverPath } = this._resolvePath(path);
+        const { serverPath } = self._resolvePath(path);
         if (serverPath === '\\') {
             self.currentContainer = '';
               self.cwd = serverPath;
@@ -218,7 +218,7 @@ class AzureStorageFileSystem extends FileSystem {
 
      delete(path) {
         var self = this;
-        const { serverPath } = this._resolvePath(path);
+        const { serverPath } = self._resolvePath(path);
         if (serverPath === '\\') {
             self.currentContainer = '';
             return;
@@ -231,6 +231,7 @@ class AzureStorageFileSystem extends FileSystem {
             // If this is container
             self.blobService.deleteContainerIfExists(self.currentContainer, function (err, res) {
                 callback(err, res);
+                console.log(res);
             });
         })().then(function (values) {
             // TODO: transform storage returned values into fs.stat like objects (in above method comments)
@@ -238,7 +239,7 @@ class AzureStorageFileSystem extends FileSystem {
         });
         }else if(len==2){
               self.currentContainer = serverPath.split('\\')[1];
-              var currentBlob=serverPath.split('\\')[2]
+              var currentBlob=serverPath.split('\\')[2];
               return thenify(function (callback) {
             // If this is container
             self.blobService.deleteBlobIfExists(self.currentContainer, currentBlob,function (err, res) {
