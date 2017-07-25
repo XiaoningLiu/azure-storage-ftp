@@ -15,11 +15,10 @@ class AzureStorageFileSystem extends FileSystem {
     constructor(connection, { root, cwd, storageAccount, storageSASToken } = {}) {
         super(connection, { root, cwd });
 
-        console.log(storageAccount);
         this.storageAccount = storageAccount || '';
         this.storageBlobURI = `https://${storageAccount}.blob.core.windows.net`;
         this.storageSASToken = storageSASToken || '';
-        this.blobService = AzureStorage.createBlobServiceWithSas(storageBlobURI, storageSASToken);
+        this.blobService = AzureStorage.createBlobServiceWithSas(this.storageBlobURI, this.storageSASToken);
         this.currentContainer = ''; // Current Container
     }
 
@@ -43,39 +42,39 @@ class AzureStorageFileSystem extends FileSystem {
         birthtime: new Date('2017-04-06T13:02:44.396Z')
         }
     */
-    get(fileName) {
-        return thenify(function (callback) {
-            // If this is container
-            this.blobService.getContainerProperties(this.container, function (err, res) {
-                callback(err, res);
-            });
-        })().then(function (values) {
-            // TODO: transform storage returned values into fs.stat like objects (in above method comments)
-            return {
-                name: 'xxx', // container/blob name
-                isDirectory: function () { return true }, // Return true when it's a container
-                dev: 920907695,
-                mode: 16822,
-                nlink: 1,
-                uid: 0,
-                gid: 0,
-                rdev: 0,
-                blksize: undefined,
-                ino: 281474976890711,
-                size: 0,
-                blocks: undefined,
-                atime: new Date('2017-04-06T13:02:44.397Z'),
-                mtime: new Date('2017-04-06T13:02:44.397Z'),
-                ctime: new Date('2017-07-21T06:13:17.006Z'),
-                birthtime: new Date('2017-04-06T13:02:44.396Z')
-            };
-        }).catch(function (err) {
-            // TODO: deal with err
-            return {
-                
-            };
-        });
-    };
+    // get(fileName) {
+    //     return thenify(function (callback) {
+    //         // If this is container
+    //         this.blobService.getContainerProperties(this.container, function (err, res) {
+    //             callback(err, res);
+    //         });
+    //     })().then(function (values) {
+    //         // TODO: transform storage returned values into fs.stat like objects (in above method comments)
+    //         return {
+    //             name: 'xxx', // container/blob name
+    //             isDirectory: function () { return true }, // Return true when it's a container
+    //             dev: 920907695,
+    //             mode: 16822,
+    //             nlink: 1,
+    //             uid: 0,
+    //             gid: 0,
+    //             rdev: 0,
+    //             blksize: undefined,
+    //             ino: 281474976890711,
+    //             size: 0,
+    //             blocks: undefined,
+    //             atime: new Date('2017-04-06T13:02:44.397Z'),
+    //             mtime: new Date('2017-04-06T13:02:44.397Z'),
+    //             ctime: new Date('2017-07-21T06:13:17.006Z'),
+    //             birthtime: new Date('2017-04-06T13:02:44.396Z')
+    //         };
+    //     }).catch(function (err) {
+    //         // TODO: deal with err
+    //         return {
+
+    //         };
+    //     });
+    // };
 
     /*
     * return {
@@ -98,9 +97,49 @@ class AzureStorageFileSystem extends FileSystem {
         }
     */
     list(path = '.') {
-    }
+        var self = this;
+        return thenify(function (callback) {
+            if (self.currentContainer.length === 0) {
+                self.blobService.listContainersSegmented(null, function (err, res) {
+                    callback(err, res);
+                });
+            } else {
+                self.blobService.listBlobsSegmented(self.currentContainer, null, function (err, res) {
+                    callback(err, res);
+                });
+            }
+        })().then(function (values) {
+            var isDirectory = self.currentContainer.length === 0;
+            return values.entries.map((value) => {
+                return {
+                    name: value.name, // container/blob name
+                    isDirectory: function () { return isDirectory }, // Return true when it's a container
+                    dev: 920907695,
+                    mode: 16822,
+                    nlink: 1,
+                    uid: 0,
+                    gid: 0,
+                    rdev: 0,
+                    blksize: undefined,
+                    ino: 281474976890711,
+                    size: 0,
+                    blocks: undefined,
+                    atime: new Date(value.lastModified),
+                    mtime: new Date(value.lastModified),
+                    ctime: new Date(value.lastModified),
+                    birthtime: new Date(value.lastModified)
+                };
+            });
+        }).then(function (values) {
+            console.log(values);
+            // TODO: transform storage returned values into fs.stat like objects (in above method comments)
+            return values;
+        }).catch(function (err) {
+            // TODO: deal with err
+            return [{
 
-    chdir(path = '.') {
+            }];
+        });
     }
 }
 
