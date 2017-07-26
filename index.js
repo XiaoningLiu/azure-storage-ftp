@@ -142,7 +142,8 @@ class AzureStorageFileSystem extends FileSystem {
         var self = this;
         function fn(path,level,cb){
             self.blobService.createContainer(path,level, function (error){
-                if (error!=null){
+                if (error!=null){                    
+                    throw new Error(error.message);
                     cb(error.message);
                 }
                 else{
