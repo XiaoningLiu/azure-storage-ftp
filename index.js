@@ -176,7 +176,7 @@ class AzureStorageFileSystem extends FileSystem {
                     rdev: 0,
                     blksize: undefined,
                     ino: 281474976890711,
-                    size: 0,
+                    size: isDirectory ? 0 : value.contentLength,
                     blocks: undefined,
                     atime: new Date(value.lastModified),
                     mtime: new Date(value.lastModified),
@@ -256,11 +256,22 @@ class AzureStorageFileSystem extends FileSystem {
     }
 
     write(fileName, { append = false, start = undefined } = {}) {
+        console.log('WRITE');
+        console.log(append);
+        console.log(start);
         var self = this;
         return thenify(function (callback) {
+            console.log('start creating write stream');
             var stream = self.blobService.createWriteStreamToBlockBlob(self.currentContainer, fileName, function (err, res) {
-
+                console.log('writeStreamFinished');
             });
+
+            // Workaround to fix Azure Storage Writable stream encoding bug
+            var oldWriteMethod = stream.write;
+            stream.write = function (data, encoding) {
+                oldWriteMethod.call(stream, Buffer.from(data, encoding));
+            }
+
             callback(null, stream);
         })().then(function (stream) {
             return stream;
