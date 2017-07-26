@@ -21,29 +21,7 @@ class AzureStorageFileSystem extends FileSystem {
         this.storageSASToken = storageSASToken || '';
         this.blobService = AzureStorage.createBlobServiceWithSas(this.storageBlobURI, this.storageSASToken);
         this.currentContainer = ''; // Current Container
-
     }
-
-    /*
-    * return {
-        name: 'xxx', // container/blob name
-        isDirectory: function () { return true }, // Return true when it's a container
-        // dev: 920907695,
-        // mode: 16822,
-        // nlink: 1,
-        // uid: 0,
-        // gid: 0,
-        // rdev: 0,
-        // blksize: undefined,
-        // ino: 281474976890711,
-        // size: 0,
-        // blocks: undefined,
-        // atime: new Date('2017-04-06T13:02:44.397Z'),
-        // mtime: new Date('2017-04-06T13:02:44.397Z'),
-        // ctime: new Date('2017-07-21T06:13:17.006Z'),
-        // birthtime: new Date('2017-04-06T13:02:44.396Z')
-        }
-    */
 
     _getBlobName(serverPath) {
         var splittedPath = serverPath.split('\\');
@@ -91,7 +69,7 @@ class AzureStorageFileSystem extends FileSystem {
             }).catch(function (err) {
                 // TODO: deal with err
                 return {
-
+                    isDirectory: function () {return false;}
                 };
             });
         } else if ((serverPath.split('\\').length - 1) === 2) {
@@ -125,7 +103,7 @@ class AzureStorageFileSystem extends FileSystem {
             }).catch(function (err) {
                 // TODO: deal with err
                 return {
-
+                    isDirectory: function () { return false }, // Return false when it's a blob
                 };
             });
         } else {
@@ -187,6 +165,7 @@ class AzureStorageFileSystem extends FileSystem {
     */
     list(path = '.') {
         var self = this;
+        console.log(`LIST ${path}`);        
         return thenify(function (callback) {
             if (self.currentContainer.length === 0) {
                 self.blobService.listContainersSegmented(null, function (err, res) {
@@ -220,16 +199,14 @@ class AzureStorageFileSystem extends FileSystem {
                 };
             });
         }).then(function (values) {
-            // console.log(values);
-            // TODO: transform storage returned values into fs.stat like objects (in above method comments)
             return values;
-        }).catch(function (err) {
-            // TODO: deal with err
-            return [{}];
+        }).catch(function (err) {       
+            return [];
         });
     }
 
     chdir(path = '.') {
+        console.log(`CHDIR ${path}`);
         var self = this;
         const { serverPath } = self._resolvePath(path);
         if (serverPath === '\\') {
@@ -320,22 +297,20 @@ class AzureStorageFileSystem extends FileSystem {
 const log = bunyan.createLogger({ name: 'test' });
 log.level('debug');
 
-const server = new FtpServer('ftp://127.0.0.1:21', {
+const server = new FtpServer('ftp://127.0.0.1:8881', {
     log,
     pasv_range: 8882,
     greeting: ['Welcome', 'to', 'the', 'Windows', 'Azure', 'Storage', 'FTP'],
     anonymous: 'sillyrabbit'
 });
 server.on('login', ({ username, password }, resolve, reject) => {
-    if (username === 'test' && password === 'test' || username === 'anonymous') {
-        var root = require('os').homedir();
-        var cwd = '';
-        var storageAccount = 'browserifytest';
-        var storageSASToken = '?sv=2015-12-11&ss=bfqt&srt=sco&sp=rwdlacup&se=2017-12-27T22:19:10Z&st=2016-12-27T14:19:10Z&spr=https&sig=IHhkdpaB9PkccStZvSSqMxFSA16SMSQwIDFB97XStOY%3D';
-        resolve({
-            root: require('os').homedir(),
-            fs: new AzureStorageFileSystem(null, { root, cwd, storageAccount, storageSASToken })
-        });
-    } else reject('Bad username or password');
+    var root = '';
+    var cwd = '';
+    var storageAccount = username;
+    var storageSASToken = password;
+    resolve({
+        root: root,
+        fs: new AzureStorageFileSystem(null, { root, cwd, storageAccount, storageSASToken })
+    });
 });
 server.listen();
