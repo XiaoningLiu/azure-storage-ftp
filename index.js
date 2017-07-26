@@ -69,7 +69,7 @@ class AzureStorageFileSystem extends FileSystem {
             }).catch(function (err) {
                 // TODO: deal with err
                 return {
-                    isDirectory: function () {return false;}
+                    isDirectory: function () { return false; }
                 };
             });
         } else if ((serverPath.split('\\').length - 1) === 2) {
@@ -113,34 +113,22 @@ class AzureStorageFileSystem extends FileSystem {
     };
 
     mkdir(path) {
+        const { serverPath } = this._resolvePath(path);
+        var path = serverPath.substr(1);
 
-        const {serverPath} = this._resolvePath(path);
-        var path=serverPath.substr(1);
-        
         var self = this;
-        function fn(path,level,cb){
-            self.blobService.createContainer(path,level, function (error){
-                if (error!=null){
-                    cb(error.message);
-                }
-                else{
-                    cb(null);
-                }
-           }); 
+        if (self.currentContainer != '') {
+            throw new Error('Creating virtual directories under containers is not support.');
         }
-        const p=thenify(fn);
-        p(path,{publicAccessLevel : 'blob'})
-        .then(val =>{
-            console.log("path:");
-            console.log(path);
-            return serverPath; 
-        })
-        .catch(err=>{
-            console.log(err);
-            return '.';
+
+        thenify(function (callback) {
+            self.blobService.createContainerIfNotExists(path, function (error, res) {
+                callback(error, res);
+            });
+        })().then(function (res) {
+            return res;
         });
     }
-
 
     /*
     * return {
@@ -164,7 +152,7 @@ class AzureStorageFileSystem extends FileSystem {
     */
     list(path = '.') {
         var self = this;
-        console.log(`LIST ${path}`);        
+        console.log(`LIST ${path}`);
         return thenify(function (callback) {
             if (self.currentContainer.length === 0) {
                 self.blobService.listContainersSegmented(null, function (err, res) {
@@ -199,7 +187,7 @@ class AzureStorageFileSystem extends FileSystem {
             });
         }).then(function (values) {
             return values;
-        }).catch(function (err) {       
+        }).catch(function (err) {
             return [];
         });
     }
@@ -280,17 +268,16 @@ class AzureStorageFileSystem extends FileSystem {
         });
     }
 
-    rename(from,to)
-    {      
+    rename(from, to) {
         throw new Error('Cannot support the rename operation!');
-       
+
     }
-    
-    chmod(path,mode){
+
+    chmod(path, mode) {
         throw new Error('Cannot support the chmod operation!');
-       
+
     }
-    
+
 }
 
 const log = bunyan.createLogger({ name: 'test' });
