@@ -271,6 +271,18 @@ class AzureStorageFileSystem extends FileSystem {
             return stream;
         });
     }
+
+    rename(from,to)
+    {      
+        throw new Error('Cannot support the rename operation!');
+       
+    }
+    
+    chmod(path,mode){
+        throw new Error('Cannot support the chmod operation!');
+       
+    }
+    
 }
 
 const log = bunyan.createLogger({ name: 'test' });
