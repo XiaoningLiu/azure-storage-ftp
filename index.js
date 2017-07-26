@@ -117,21 +117,8 @@ class AzureStorageFileSystem extends FileSystem {
         var path = serverPath.substr(1);
 
         var self = this;
-<<<<<<< HEAD
         if (self.currentContainer != '') {
             throw new Error('Creating virtual directories under containers is not support.');
-=======
-        function fn(path,level,cb){
-            self.blobService.createContainer(path,level, function (error){
-                if (error!=null){                    
-                    throw new Error(error.message);
-                    cb(error.message);
-                }
-                else{
-                    cb(null);
-                }
-           }); 
->>>>>>> 957fefa0e7dbd085f28e92cd68a3bd7f6b117d80
         }
 
         thenify(function (callback) {
@@ -299,17 +286,25 @@ log.level('debug');
 const server = new FtpServer('ftp://127.0.0.1:8881', {
     log,
     pasv_range: 8882,
-    greeting: ['Welcome', 'to', 'the', 'Windows', 'Azure', 'Storage', 'FTP'],
-    anonymous: 'sillyrabbit'
+    greeting: ['Welcome', 'to', 'the', 'Windows', 'Azure', 'Storage', 'FTP']
 });
 server.on('login', ({ username, password }, resolve, reject) => {
     var root = '';
     var cwd = '';
     var storageAccount = username;
     var storageSASToken = password;
-    resolve({
-        root: root,
-        fs: new AzureStorageFileSystem(null, { root, cwd, storageAccount, storageSASToken })
+
+    var storageBlobURI = `https://${storageAccount}.blob.core.windows.net`;
+    var blobService = AzureStorage.createBlobServiceWithSas(storageBlobURI, storageSASToken);
+    blobService.listContainersSegmented(null, function (err, res) {
+        if (err) {
+            reject("Invalid Azure Storage Account Name and SASToken");
+        } else {
+            resolve({
+                root: root,
+                fs: new AzureStorageFileSystem(null, { root, cwd, storageAccount, storageSASToken })
+            });
+        }
     });
 });
 server.listen();
