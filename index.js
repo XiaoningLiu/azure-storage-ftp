@@ -11,6 +11,7 @@ const FtpServer = require('ftp-srv');
 const FileSystem = FtpServer.FileSystem;
 const thenify = require('thenify');
 
+
 class AzureStorageFileSystem extends FileSystem {
     constructor(connection, { root, cwd, storageAccount, storageSASToken } = {}) {
         super(connection, { root, cwd });
@@ -110,6 +111,36 @@ class AzureStorageFileSystem extends FileSystem {
             return null;
         }
     };
+
+    mkdir(path) {
+
+        const {serverPath} = this._resolvePath(path);
+        var path=serverPath.substr(1);
+        
+        var self = this;
+        function fn(path,level,cb){
+            self.blobService.createContainer(path,level, function (error){
+                if (error!=null){
+                    cb(error.message);
+                }
+                else{
+                    cb(null);
+                }
+           }); 
+        }
+        const p=thenify(fn);
+        p(path,{publicAccessLevel : 'blob'})
+        .then(val =>{
+            console.log("path:");
+            console.log(path);
+            return serverPath; 
+        })
+        .catch(err=>{
+            console.log(err);
+            return '.';
+        });
+    }
+
 
     /*
     * return {
@@ -248,6 +279,18 @@ class AzureStorageFileSystem extends FileSystem {
             return stream;
         });
     }
+
+    rename(from,to)
+    {      
+        throw new Error('Cannot support the rename operation!');
+       
+    }
+    
+    chmod(path,mode){
+        throw new Error('Cannot support the chmod operation!');
+       
+    }
+    
 }
 
 const log = bunyan.createLogger({ name: 'test' });
