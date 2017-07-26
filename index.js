@@ -11,7 +11,6 @@ const FtpServer = require('ftp-srv');
 const FileSystem = FtpServer.FileSystem;
 const thenify = require('thenify');
 
-
 class AzureStorageFileSystem extends FileSystem {
     constructor(connection, { root, cwd, storageAccount, storageSASToken } = {}) {
         super(connection, { root, cwd });
@@ -24,32 +23,32 @@ class AzureStorageFileSystem extends FileSystem {
     }
 
     _getBlobName(serverPath) {
-        var splittedPath = serverPath.split('\\');
+        var splittedPath = serverPath.split(nodePath.sep);
         return splittedPath.length === 3 ? splittedPath[3] : '';
     }
 
     get(fileName) {
         const { serverPath } = this._resolvePath(fileName);
         var self = this;
-        if (serverPath === '\\') {
+        if (serverPath === nodePath.sep) {
             // If this is root
             // console.log('Root');
             return {
-                name: '\\',
+                name: nodePath.sep,
                 isDirectory: function () { return true }
             };
-        } else if ((serverPath.split('\\').length - 1) === 1) {
+        } else if ((serverPath.split(nodePath.sep).length - 1) === 1) {
             // If this is container
-            //currentContainerName = serverPath.split('\\')[1];
+            //currentContainerName = serverPath.split(nodePath.sep)[1];
             return thenify(function (callback) {
-                self.blobService.getContainerProperties(serverPath.split('\\')[1], function (err, res) {
+                self.blobService.getContainerProperties(serverPath.split(nodePath.sep)[1], function (err, res) {
                     //console.log(self.container.name);
                     callback(err, res);
                 });
             })().then(function (values) {
                 // TODO: transform storage returned values into fs.stat like objects (in above method comments)
                 return {
-                    name: serverPath.split('\\')[1], // container/blob
+                    name: serverPath.split(nodePath.sep)[1], // container/blob
                     isDirectory: function () { return true }, // Return true when it's a container
                     dev: 920907695,
                     mode: 16822,
@@ -72,18 +71,18 @@ class AzureStorageFileSystem extends FileSystem {
                     isDirectory: function () { return false; }
                 };
             });
-        } else if ((serverPath.split('\\').length - 1) === 2) {
+        } else if ((serverPath.split(nodePath.sep).length - 1) === 2) {
             // If this is blob
-            //currentContainerName = serverPath.split('\\')[1];
-            //currentBlobName = serverPath.split('\\')[2];
+            //currentContainerName = serverPath.split(nodePath.sep)[1];
+            //currentBlobName = serverPath.split(nodePath.sep)[2];
             return thenify(function (callback) {
-                self.blobService.getBlobProperties(serverPath.split('\\')[1], serverPath.split('\\')[2], function (err, res) {
+                self.blobService.getBlobProperties(serverPath.split(nodePath.sep)[1], serverPath.split(nodePath.sep)[2], function (err, res) {
                     callback(err, res);
                 });
             })().then(function (values) {
                 // TODO: transform storage returned values into fs.stat like objects (in above method comments)
                 return {
-                    name: serverPath.split('\\')[2], // container/blob name
+                    name: serverPath.split(nodePath.sep)[2], // container/blob name
                     isDirectory: function () { return false }, // Return false when it's a blob
                     dev: 920907695,
                     mode: 16822,
@@ -196,13 +195,13 @@ class AzureStorageFileSystem extends FileSystem {
         console.log(`CHDIR ${path}`);
         var self = this;
         const { serverPath } = self._resolvePath(path);
-        if (serverPath === '\\') {
+        if (serverPath === nodePath.sep) {
             self.currentContainer = '';
             self.cwd = serverPath;
             return self.cwd;
         }
 
-        self.currentContainer = serverPath.split('\\')[1];
+        self.currentContainer = serverPath.split(nodePath.sep)[1];
         return thenify(function (callback) {
             self.blobService.doesContainerExist(self.currentContainer, function (err, res) {
                 callback(err, res);
@@ -218,11 +217,11 @@ class AzureStorageFileSystem extends FileSystem {
     delete(path) {
         var self = this;
         const { serverPath } = self._resolvePath(path);
-        if (serverPath === '\\') {
+        if (serverPath === nodePath.sep) {
             return;
         }
 
-        var len = serverPath.split('\\').length - 1;
+        var len = serverPath.split(nodePath.sep).length - 1;
         if (len == 1) {
             return thenify(function (callback) {
                 self.blobService.deleteContainerIfExists(path, function (err, res) {
