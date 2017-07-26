@@ -156,6 +156,10 @@ class AzureStorageFileSystem extends FileSystem {
             console.log("path:");
             console.log(path);
             return serverPath; 
+        })
+        .catch(err=>{
+            console.log(err);
+            return '.';
         });
     }
 
