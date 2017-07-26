@@ -117,8 +117,21 @@ class AzureStorageFileSystem extends FileSystem {
         var path = serverPath.substr(1);
 
         var self = this;
+<<<<<<< HEAD
         if (self.currentContainer != '') {
             throw new Error('Creating virtual directories under containers is not support.');
+=======
+        function fn(path,level,cb){
+            self.blobService.createContainer(path,level, function (error){
+                if (error!=null){                    
+                    throw new Error(error.message);
+                    cb(error.message);
+                }
+                else{
+                    cb(null);
+                }
+           }); 
+>>>>>>> 957fefa0e7dbd085f28e92cd68a3bd7f6b117d80
         }
 
         thenify(function (callback) {
