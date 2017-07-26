@@ -22,7 +22,6 @@ class AzureStorageFileSystem extends FileSystem {
         this.blobService = AzureStorage.createBlobServiceWithSas(this.storageBlobURI, this.storageSASToken);
         this.currentContainer = ''; // Current Container
 
-        
     }
 
     /*
@@ -46,25 +45,33 @@ class AzureStorageFileSystem extends FileSystem {
         }
     */
 
+    _getBlobName(serverPath) {
+        var splittedPath = serverPath.split('\\');
+        return splittedPath.length === 3 ? splittedPath[3] : '';
+    }
+
     get(fileName) {
         const { serverPath } = this._resolvePath(fileName);
-        if ((serverPath.split('\\').length - 1) === 1) {
+        var self = this;
+        if (serverPath === '\\') {
             // If this is root
-            console.log('Root');
+            // console.log('Root');
             return {
                 name: '\\',
                 isDirectory: function () { return true }
             };
-        } else if ((serverPath.split('\\').length - 1) === 2) {
+        } else if ((serverPath.split('\\').length - 1) === 1) {
             // If this is container
+            //currentContainerName = serverPath.split('\\')[1];
             return thenify(function (callback) {
-                self.blobService.getContainerProperties(self.container, function (err, res) {
+                self.blobService.getContainerProperties(serverPath.split('\\')[1], function (err, res) {
+                    //console.log(self.container.name);
                     callback(err, res);
                 });
             })().then(function (values) {
                 // TODO: transform storage returned values into fs.stat like objects (in above method comments)
                 return {
-                    name: 'xxx', // container/blob
+                    name: serverPath.split('\\')[1], // container/blob
                     isDirectory: function () { return true }, // Return true when it's a container
                     dev: 920907695,
                     mode: 16822,
@@ -87,16 +94,18 @@ class AzureStorageFileSystem extends FileSystem {
 
                 };
             });
-        } else if ((serverPath.split('\\').length - 1) === 3) {
-            // If this is bllob
+        } else if ((serverPath.split('\\').length - 1) === 2) {
+            // If this is blob
+            //currentContainerName = serverPath.split('\\')[1];
+            //currentBlobName = serverPath.split('\\')[2];
             return thenify(function (callback) {
-                self.blobService.getBlobProperties(self.container, function (err, res) {
+                self.blobService.getBlobProperties(serverPath.split('\\')[1], serverPath.split('\\')[2], function (err, res) {
                     callback(err, res);
                 });
             })().then(function (values) {
                 // TODO: transform storage returned values into fs.stat like objects (in above method comments)
                 return {
-                    name: 'xxx', // container/blob name
+                    name: serverPath.split('\\')[2], // container/blob name
                     isDirectory: function () { return false }, // Return false when it's a blob
                     dev: 920907695,
                     mode: 16822,
@@ -148,18 +157,7 @@ class AzureStorageFileSystem extends FileSystem {
             console.log(path);
             return serverPath; 
         });
-        //.catch(err => {console.log("error:");console.log(serverPath);console.log(err);return err;});
-
-/*const {fsPath} = this._resolvePath(path);
-var ans=fs.mkdir(fsPath)
-
-    .then(() => {console.log("path:");console.log(fsPath);return fsPath;});
-    console.log(ans);
-    return ans;
-*/    
-
-
-}
+    }
 
 
     /*
@@ -217,7 +215,7 @@ var ans=fs.mkdir(fsPath)
                 };
             });
         }).then(function (values) {
-            console.log(values);
+            // console.log(values);
             // TODO: transform storage returned values into fs.stat like objects (in above method comments)
             return values;
         }).catch(function (err) {
@@ -228,38 +226,99 @@ var ans=fs.mkdir(fsPath)
 
     chdir(path = '.') {
         var self = this;
-        const { serverPath } = this._resolvePath(path);
+        const { serverPath } = self._resolvePath(path);
         if (serverPath === '\\') {
             self.currentContainer = '';
-            return;
+            self.cwd = serverPath;
+            return self.cwd;
         }
-        self.currentContainer = serverPath.split('\\')[1];
 
+        self.currentContainer = serverPath.split('\\')[1];
         return thenify(function (callback) {
-            // If this is container
             self.blobService.doesContainerExist(self.currentContainer, function (err, res) {
                 callback(err, res);
             });
         })().then(function (values) {
-            // TODO: transform storage returned values into fs.stat like objects (in above method comments)
             if (values.exists) {
                 self.cwd = serverPath;
                 return self.cwd;
             }
         });
     }
+
+    delete(path) {
+        var self = this;
+        const { serverPath } = self._resolvePath(path);
+        if (serverPath === '\\') {
+            return;
+        }
+
+        var len = serverPath.split('\\').length - 1;
+        if (len == 1) {
+            return thenify(function (callback) {
+                self.blobService.deleteContainerIfExists(path, function (err, res) {
+                    callback(err, res);
+                });
+            })().then(function (values) {
+                return values;
+            });
+        } else if (len == 2) {
+            return thenify(function (callback) {
+                self.blobService.deleteBlobIfExists(self.currentContainer, path, function (err, res) {
+                    callback(err, res);
+                });
+            })().then(function (values) {
+                return values;
+            });
+        } else {
+            return;
+        }
+    }
+
+    read(fileName, { start = undefined } = {}) {
+        var self = this;
+        return thenify(function (callback) {
+            var stream = self.blobService.createReadStream(self.currentContainer, fileName, function (err, res) {
+
+            });
+            callback(null, stream);
+        })().then(function (stream) {
+            return stream;
+        });
+    }
+
+    write(fileName, { append = false, start = undefined } = {}) {
+        var self = this;
+        return thenify(function (callback) {
+            var stream = self.blobService.createWriteStreamToBlockBlob(self.currentContainer, fileName, function (err, res) {
+
+            });
+            callback(null, stream);
+        })().then(function (stream) {
+            return stream;
+        });
+    }
+
+    rename(from,to)
+    {      
+        throw new Error('Cannot support the rename operation!');
+       
+    }
+    
+    chmod(path,mode){
+        throw new Error('Cannot support the chmod operation!');
+       
+    }
+    
 }
-
-
 
 const log = bunyan.createLogger({ name: 'test' });
 log.level('debug');
 
-const server = new FtpServer('ftp://127.0.0.1:8881', {
+const server = new FtpServer('ftp://127.0.0.1:21', {
     log,
     pasv_range: 8882,
-    greeting: ['Welcome', 'to', 'the', 'jungle!'],
-    file_format: 'ep',
+    greeting: ['Welcome', 'to', 'the', 'Windows', 'Azure', 'Storage', 'FTP'],
     anonymous: 'sillyrabbit'
 });
 server.on('login', ({ username, password }, resolve, reject) => {
