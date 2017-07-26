@@ -16,7 +16,6 @@ class AzureStorageFileSystem extends FileSystem {
     constructor(connection, { root, cwd, storageAccount, storageSASToken } = {}) {
         super(connection, { root, cwd });
 
-        console.log(storageAccount);
         this.storageAccount = storageAccount || '';
         this.storageBlobURI = `https://${storageAccount}.blob.core.windows.net`;
         this.storageSASToken = storageSASToken || '';
@@ -30,88 +29,137 @@ class AzureStorageFileSystem extends FileSystem {
     * return {
         name: 'xxx', // container/blob name
         isDirectory: function () { return true }, // Return true when it's a container
-        dev: 920907695,
-        mode: 16822,
-        nlink: 1,
-        uid: 0,
-        gid: 0,
-        rdev: 0,
-        blksize: undefined,
-        ino: 281474976890711,
-        size: 0,
-        blocks: undefined,
-        atime: new Date('2017-04-06T13:02:44.397Z'),
-        mtime: new Date('2017-04-06T13:02:44.397Z'),
-        ctime: new Date('2017-07-21T06:13:17.006Z'),
-        birthtime: new Date('2017-04-06T13:02:44.396Z')
+        // dev: 920907695,
+        // mode: 16822,
+        // nlink: 1,
+        // uid: 0,
+        // gid: 0,
+        // rdev: 0,
+        // blksize: undefined,
+        // ino: 281474976890711,
+        // size: 0,
+        // blocks: undefined,
+        // atime: new Date('2017-04-06T13:02:44.397Z'),
+        // mtime: new Date('2017-04-06T13:02:44.397Z'),
+        // ctime: new Date('2017-07-21T06:13:17.006Z'),
+        // birthtime: new Date('2017-04-06T13:02:44.396Z')
         }
     */
+
     get(fileName) {
-        console.log(fileName);
-        const {serverPath} = this._resolvePath(fileName);
-        console.log(serverPath);
-
-        if (serverPath=='\\'){
-            serverPath='\\test\\1';
-            console.log(serverPath.includes('\\'));
-        }
-
-        var self = this;
-        return thenify(function (callback) {
+        const { serverPath } = this._resolvePath(fileName);
+        if ((serverPath.split('\\').length - 1) === 1) {
+            // If this is root
+            console.log('Root');
+            return {
+                name: '\\',
+                isDirectory: function () { return true }
+            };
+        } else if ((serverPath.split('\\').length - 1) === 2) {
             // If this is container
-            self.blobService.getContainerProperties("test", function (err, res) {
-                callback(err, res);
+            return thenify(function (callback) {
+                self.blobService.getContainerProperties(self.container, function (err, res) {
+                    callback(err, res);
+                });
+            })().then(function (values) {
+                // TODO: transform storage returned values into fs.stat like objects (in above method comments)
+                return {
+                    name: 'xxx', // container/blob
+                    isDirectory: function () { return true }, // Return true when it's a container
+                    dev: 920907695,
+                    mode: 16822,
+                    nlink: 1,
+                    uid: 0,
+                    gid: 0,
+                    rdev: 0,
+                    blksize: undefined,
+                    ino: 281474976890711,
+                    size: 0,
+                    blocks: undefined,
+                    atime: new Date('2017-04-06T13:02:44.397Z'),
+                    mtime: new Date('2017-04-06T13:02:44.397Z'),
+                    ctime: new Date('2017-07-21T06:13:17.006Z'),
+                    birthtime: new Date('2017-04-06T13:02:44.396Z')
+                };
+            }).catch(function (err) {
+                // TODO: deal with err
+                return {
+
+                };
             });
-        })().then(function (values) {
-            // TODO: transform storage returned values into fs.stat like objects (in above method comments)
-            return {
-                name: 'xxx', // container/blob name
-                isDirectory: function () { return true }, // Return true when it's a container
-                dev: 920907695,
-                mode: 16822,
-                nlink: 1,
-                uid: 0,
-                gid: 0,
-                rdev: 0,
-                blksize: undefined,
-                ino: 281474976890711,
-                size: 0,
-                blocks: undefined,
-                atime: new Date('2017-04-06T13:02:44.397Z'),
-                mtime: new Date('2017-04-06T13:02:44.397Z'),
-                ctime: new Date('2017-07-21T06:13:17.006Z'),
-                birthtime: new Date('2017-04-06T13:02:44.396Z')
-            };
-        }).catch(function (err) {
-            // TODO: deal with err
-            return {
-                
-            };
-        });
+        } else if ((serverPath.split('\\').length - 1) === 3) {
+            // If this is bllob
+            return thenify(function (callback) {
+                self.blobService.getBlobProperties(self.container, function (err, res) {
+                    callback(err, res);
+                });
+            })().then(function (values) {
+                // TODO: transform storage returned values into fs.stat like objects (in above method comments)
+                return {
+                    name: 'xxx', // container/blob name
+                    isDirectory: function () { return false }, // Return false when it's a blob
+                    dev: 920907695,
+                    mode: 16822,
+                    nlink: 1,
+                    uid: 0,
+                    gid: 0,
+                    rdev: 0,
+                    blksize: undefined,
+                    ino: 281474976890711,
+                    size: 0,
+                    blocks: undefined,
+                    atime: new Date('2017-04-06T13:02:44.397Z'),
+                    mtime: new Date('2017-04-06T13:02:44.397Z'),
+                    ctime: new Date('2017-07-21T06:13:17.006Z'),
+                    birthtime: new Date('2017-04-06T13:02:44.396Z')
+                };
+            }).catch(function (err) {
+                // TODO: deal with err
+                return {
+
+                };
+            });
+        } else {
+            console.log('Blob with Folder Error!');
+            return null;
+        }
     };
 
     mkdir(path) {
 
         const {serverPath} = this._resolvePath(path);
-
+        var path=serverPath.substr(1);
+        
         var self = this;
-
-        function fn(serverPath,level,cb){
-
-            self.blobService.createContainer(serverPath,level, function (error){
-
-              cb(error.message);
-            }); 
-
+        function fn(path,level,cb){
+            self.blobService.createContainer(path,level, function (error){
+                if (error!=null){
+                    cb(error.message);
+                }
+                else{
+                    cb(null);
+                }
+           }); 
         }
-
         const p=thenify(fn);
-        p('aapath',{publicAccessLevel : 'blob'})
-        .then(val =>{ return serverPath;})
-        .catch(err => {console.log(err);return err;});
+        p(path,{publicAccessLevel : 'blob'})
+        .then(val =>{
+            console.log("path:");
+            console.log(path);
+            return serverPath; 
+        });
+        //.catch(err => {console.log("error:");console.log(serverPath);console.log(err);return err;});
+
+/*const {fsPath} = this._resolvePath(path);
+var ans=fs.mkdir(fsPath)
+
+    .then(() => {console.log("path:");console.log(fsPath);return fsPath;});
+    console.log(ans);
+    return ans;
+*/    
 
 
-    }
+}
 
 
     /*
@@ -135,11 +183,74 @@ class AzureStorageFileSystem extends FileSystem {
         }
     */
     list(path = '.') {
+        var self = this;
+        return thenify(function (callback) {
+            if (self.currentContainer.length === 0) {
+                self.blobService.listContainersSegmented(null, function (err, res) {
+                    callback(err, res);
+                });
+            } else {
+                self.blobService.listBlobsSegmented(self.currentContainer, null, function (err, res) {
+                    callback(err, res);
+                });
+            }
+        })().then(function (values) {
+            var isDirectory = self.currentContainer.length === 0;
+            return values.entries.map((value) => {
+                return {
+                    name: value.name, // container/blob name
+                    isDirectory: function () { return isDirectory }, // Return true when it's a container
+                    dev: 920907695,
+                    mode: 16822,
+                    nlink: 1,
+                    uid: 0,
+                    gid: 0,
+                    rdev: 0,
+                    blksize: undefined,
+                    ino: 281474976890711,
+                    size: 0,
+                    blocks: undefined,
+                    atime: new Date(value.lastModified),
+                    mtime: new Date(value.lastModified),
+                    ctime: new Date(value.lastModified),
+                    birthtime: new Date(value.lastModified)
+                };
+            });
+        }).then(function (values) {
+            console.log(values);
+            // TODO: transform storage returned values into fs.stat like objects (in above method comments)
+            return values;
+        }).catch(function (err) {
+            // TODO: deal with err
+            return [{}];
+        });
     }
 
     chdir(path = '.') {
+        var self = this;
+        const { serverPath } = this._resolvePath(path);
+        if (serverPath === '\\') {
+            self.currentContainer = '';
+            return;
+        }
+        self.currentContainer = serverPath.split('\\')[1];
+
+        return thenify(function (callback) {
+            // If this is container
+            self.blobService.doesContainerExist(self.currentContainer, function (err, res) {
+                callback(err, res);
+            });
+        })().then(function (values) {
+            // TODO: transform storage returned values into fs.stat like objects (in above method comments)
+            if (values.exists) {
+                self.cwd = serverPath;
+                return self.cwd;
+            }
+        });
     }
 }
+
+
 
 const log = bunyan.createLogger({ name: 'test' });
 log.level('debug');
